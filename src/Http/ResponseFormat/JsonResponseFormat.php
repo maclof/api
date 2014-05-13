@@ -25,14 +25,20 @@ class JsonResponseFormat implements ResponseFormatInterface {
 	 */
 	public function formatEloquentCollection($collection)
 	{
-		if ($collection->isEmpty())
-		{
-			return $this->encode([]);
-		}
-
 		$key = str_plural($collection->first()->getTable());
 
 		return $this->encode([$key => $collection->toArray()]);
+	}
+
+	/**
+	 * Format an empty collection.
+	 * 
+	 * @param  \Illuminate\Support\Collection|\Illuminate\Pagination\Paginator  $collection
+	 * @return string
+	 */
+	public function formatEmptyCollection($collection)
+	{
+		return $this->encode((object) []);
 	}
 
 	/**
@@ -62,17 +68,6 @@ class JsonResponseFormat implements ResponseFormatInterface {
 		});
 
 		return $this->encode($response);
-	}
-
-	/**
-	 * Format an instance implementing JsonableInterface.
-	 * 
-	 * @param  \Illuminate\Support\Contracts\JsonableInterface  $response
-	 * @return string
-	 */
-	public function formatJsonableInterface($response)
-	{
-		return $response->toJson();
 	}
 
 	/**

@@ -19,6 +19,14 @@ interface ResponseFormatInterface {
 	public function formatEloquentCollection($collection);
 
 	/**
+	 * Format an empty collection.
+	 * 
+	 * @param  \Illuminate\Support\Collection|\Illuminate\Pagination\Paginator  $collection
+	 * @return string
+	 */
+	public function formatEmptyCollection($collection);
+
+	/**
 	 * Format a string.
 	 * 
 	 * @param  string  $string
@@ -33,14 +41,6 @@ interface ResponseFormatInterface {
 	 * @return string
 	 */
 	public function formatArrayableInterface($response);
-
-	/**
-	 * Format an instance implementing JsonableInterface.
-	 * 
-	 * @param  \Illuminate\Support\Contracts\JsonableInterface  $response
-	 * @return string
-	 */
-	public function formatJsonableInterface($response);
 
 	/**
 	 * Format an unknown type.

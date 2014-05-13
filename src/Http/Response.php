@@ -2,7 +2,9 @@
 
 use RuntimeException;
 use Dingo\Api\Transformer\Factory;
+use Illuminate\Support\Collection;
 use Illuminate\Support\MessageBag;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Contracts\JsonableInterface;
 use Illuminate\Support\Contracts\ArrayableInterface;
 use Illuminate\Http\Response as IlluminateResponse;
@@ -37,7 +39,7 @@ class Response extends IlluminateResponse {
 	}
 
 	/**
-	 * Process the API response.
+	 * Morph the response into the given format.
 	 * 
 	 * @return \Dingo\Api\Http\Response
 	 */
@@ -45,6 +47,10 @@ class Response extends IlluminateResponse {
 	{
 		$response = $this->getOriginalContent();
 
+		// For responses that are transformable we'll let the registered transformer
+		// do its thing with the response. This happens prior to any formatting
+		// so that a more flexible structure can be attained. Formatters are
+		// merely classes that convert an array into the proper format.
 		if (static::$transformer->transformableResponse($response))
 		{
 			$response = static::$transformer->transformResponse($response);
@@ -52,9 +58,16 @@ class Response extends IlluminateResponse {
 
 		$formatter = static::getFormatter($format);
 
-		// First we'll attempt to format the response if it's either an Eloquent
-		// model or an Eloquent collection.
-		if ($response instanceof EloquentModel)
+		// If the response is a collection and it's empty we'll let the formatter
+		// decide on how it should treat an empty response.
+		if ($this->responseIsCollection($response) and $response->isEmpty())
+		{
+			$response = $formatter->formatEmptyCollection($response);
+		}
+
+		// If a transformer is not being used then the we'll let the formatter
+		// deal with the formatting of both Eloquent models and collections.
+		elseif ($response instanceof EloquentModel)
 		{
 			$response = $formatter->formatEloquentModel($response);
 		}
@@ -64,21 +77,18 @@ class Response extends IlluminateResponse {
 		}
 		else
 		{
-			// Next we'll attempt to format the response if it's a string,
-			// an array or an object implementing ArrayableInterface,
-			// an object implementing JsonableInterface or an
-			// unknown type.
-			if (is_string($response))
-			{
-				$response = $formatter->formatString($response);
-			}
-			elseif (is_array($response) or $response instanceof ArrayableInterface)
+			// If we don't have an Eloquent model or collection then we'll
+			// need to format the response based on whether or not it's
+			// a string or an array. If it's neither then the formatter
+			// must attempt to format an unknown response. This is
+			// should never really happen. We should get arrays.
+			if (is_array($response) or $response instanceof ArrayableInterface)
 			{
 				$response = $formatter->formatArrayableInterface($response);
 			}
-			elseif ($response instanceof JsonableInterface)
+			elseif (is_string($response))
 			{
-				$response = $formatter->formatJsonableInterface($response);
+				$response = $formatter->formatString($response);
 			}
 			else
 			{
@@ -95,6 +105,17 @@ class Response extends IlluminateResponse {
 		$this->content = $response;
 
 		return $this;
+	}
+
+	/**
+	 * Determine if the response is a collection or paginator instance.
+	 * 
+	 * @param  mixed  $response
+	 * @return bool
+	 */
+	protected function responseIsCollection($response)
+	{
+		return $response instanceof Collection or $response instanceof Paginator;
 	}
 
 	/**
