@@ -2,8 +2,8 @@
 
 namespace Dingo\Api\Http;
 
-use Illuminate\Container\Container;
 use League\Fractal\Manager as Fractal;
+use Dingo\Api\Transformer\FractalTransformer;
 use League\Fractal\Resource\Item as FractalItem;
 use Illuminate\Http\Response as IlluminateResponse;
 use League\Fractal\Resource\Collection as FractalCollection;
@@ -14,11 +14,11 @@ use League\Fractal\Pagination\PaginatorInterface as FractalPaginatorInterface;
 class ResponseBuilder
 {
     /**
-     * Illuminate container instance.
+     * Fractral transformer instance.
      *
-     * @var \Illuminate\Container\Container
+     * @var \Dingo\Api\Transformer\FractalTransformer
      */
-    protected $container;
+    protected $fractal;
 
     /**
      * The HTTP response headers.
@@ -37,12 +37,12 @@ class ResponseBuilder
     /**
      * Create a new response builder instance.
      *
-     * @param  \Illuminate\Container\Container  $container
+     * @param  \Dingo\Api\Transformer\FractalTransformer  $fractal
      * @return void
      */
-    public function __construct(Container $container)
+    public function __construct(FractalTransformer $fractal)
     {
-        $this->container = $container;
+        $this->fractal = $fractal;
     }
 
     /**
@@ -109,19 +109,18 @@ class ResponseBuilder
      * Return an error response.
      * 
      * @param  string|array  $error
-     * @param  int  $code
+     * @param  int  $statusCode
      * @return \Illuminate\Http\Response
      */
-    public function withError($error, $code)
+    public function withError($error, $statusCode)
     {
         if (! is_array($error)) {
-            $error = [
-                'error' => $error,
-                'code'  => $code
-            ];
+            $error = ['error' => $error];
         }
 
-        return $this->setStatusCode($code)->withArray($error);
+        $error = array_merge(['status_code'  => $statusCode], $error);
+
+        return $this->setStatusCode($statusCode)->withArray($error);
     }
 
     /**
@@ -260,14 +259,12 @@ class ResponseBuilder
     /**
      * Resolve the Fractal manager.
      *
-     * @return void
+     * @return \League\Fractal\Manager
      */
     protected function resolveFractal()
     {
-        $transformer = $this->container->make('dingo.api.transformer');
+        $this->fractal->parseFractalIncludes();
 
-        $transformer->parseFractalIncludes();
-
-        return $transformer->getFractal();
+        return $this->fractal->getFractal();
     }
 }
