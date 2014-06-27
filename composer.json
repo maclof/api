@@ -25,12 +25,6 @@
         "mockery/mockery": "~0.9",
         "squizlabs/php_codesniffer": "1.*"
     },
-    "repositories": [
-        {
-        "type": "vcs",
-        "url": "https://github.com/garygreen/fractal.git"
-        }
-    ],
     "suggest": {
         "lucadegasperi/oauth2-server-laravel": "Use the League OAuth 2.0 server to protect your API."
     },
